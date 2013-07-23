@@ -62,7 +62,10 @@ namespace IOCPDemo
             for (Int32 i = 0; i < this.numConnections; i++)
             {
                 SocketAsyncEventArgs eventArg = new SocketAsyncEventArgs();
-                eventArg.UserToken = new MessageUserToken();
+                MessageUserToken msgUserToken = new MessageUserToken();
+                msgUserToken.MessageReceived += new EventHandler<MessageEventArgs>(OnMessageReceived);
+                eventArg.UserToken = msgUserToken;
+
                 eventArg.Completed += new EventHandler<SocketAsyncEventArgs>(OnIOCompleted);
                 eventArg.SetBuffer(new Byte[this.bufferSize], 0, this.bufferSize);
                 Console.WriteLine("Server:initEventArg: {0}", eventArg.GetHashCode());
@@ -143,6 +146,11 @@ namespace IOCPDemo
                 default:
                     throw new ArgumentException("The last operation completed on the socket was not a receive or send");
             }
+        }
+
+        private void OnMessageReceived(object sender, MessageEventArgs e)
+        {
+            Console.WriteLine("OnMessageReceived. id: {0}, msg: {1}", e.MessageID, e.Message);
         }
 
         /// <summary>

@@ -4,12 +4,15 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Net.Sockets;
+using System.Threading;
 
 namespace IOCPDemo
 {
     // 消息的封装
     internal class MessageEventArgs : EventArgs
     {
+        public static Int32 NextMessageID = 1;
+
         public readonly String Message;
         public readonly Int32 MessageID;
 
@@ -84,9 +87,7 @@ namespace IOCPDemo
                     break;
                 }
                 // TODO 这里可以不用新建 Byte[]
-                newBuffer = new Byte[lengthOfCurrentIncomingMessage];
-                Buffer.BlockCopy(bufferReceived, offset + 2, newBuffer, 0, lengthOfCurrentIncomingMessage);
-                HandleMessage(newBuffer);
+                HandleMessage(bufferReceived, offset + 2, lengthOfCurrentIncomingMessage);
                 offset += (2 + lengthOfCurrentIncomingMessage);
                 lengthOfCurrentIncomingMessage = -1;
                 Console.WriteLine("Update offset to: {0}", offset);
@@ -120,6 +121,20 @@ namespace IOCPDemo
         {
             String message = Encoding.UTF8.GetString(buffer);
             Console.WriteLine("HandleMessage: {0}, {1}", message.Length, message);
+        }
+
+        private void HandleMessage(Byte[] buffer, Int32 index, Int32 count)
+        {
+            String message = Encoding.UTF8.GetString(buffer, index, count);
+            Console.WriteLine("HandleMessage: {0}, {1}", message.Length, message);
+
+            Int32 msgID = Interlocked.Increment(ref MessageEventArgs.NextMessageID);
+            MessageEventArgs e = new MessageEventArgs(message, msgID);
+            EventHandler<MessageEventArgs> temp = Volatile.Read(ref MessageReceived);
+            if (temp != null)
+            {
+                temp(this, e);
+            }
         }
 
         private String ByteArrayToHex(Byte[] buffer)
