@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using System.Net.Sockets;
 using System.Net;
+using System.IO;
 
 
 namespace IOCPDemo
@@ -52,6 +53,8 @@ namespace IOCPDemo
             new AutoResetEvent(false)
         };
 
+        private MessageSerializer serializer;
+
         /// <summary>
         /// Create an uninitialized client instance.  
         /// To start the send/receive processing
@@ -71,6 +74,7 @@ namespace IOCPDemo
             this.hostEndPoint = new IPEndPoint(addressList[addressList.Length - 1], port);
             this.clientSocket = new Socket(this.hostEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
             this.index = index;
+            this.serializer = new MessageSerializer();
         }
 
         /// <summary>
@@ -186,17 +190,28 @@ namespace IOCPDemo
             Console.WriteLine("Client #{0}, send receive: {1}, connected: {2}", index, message, connected);
             if (this.connected)
             {
+                // Use google buf
+                HelloMessage helloMessage = new HelloMessage
+                {
+                    ID = this.GetMessageID(),
+                    Direction = MessageDirection.FromClient,
+                    Message = message
+                };
+                MemoryStream stream = new MemoryStream();
+                ProtoBuf.Serializer.Serialize(stream, helloMessage);
+                Byte[] msgBuffer = this.serializer.Serialize(helloMessage);
+            
                 // Create a buffer to send.
-                Byte[] msgBuffer = Encoding.ASCII.GetBytes(message);
+                //Byte[] msgBuffer = Encoding.ASCII.GetBytes(message);
                 Byte[] prefixBuffer = BitConverter.GetBytes((Int16)Buffer.ByteLength(msgBuffer));
                 Int32 msgLength = 2 + msgBuffer.Length;
-                Byte[] sendBuffer = new Byte[msgLength * 2];
+                Byte[] sendBuffer = new Byte[msgLength];
 
                 Buffer.BlockCopy(prefixBuffer, 0, sendBuffer, 0, 2);
                 Buffer.BlockCopy(msgBuffer, 0, sendBuffer, 2, msgBuffer.Length);
-                Buffer.BlockCopy(prefixBuffer, 0, sendBuffer, msgLength, 2);
-                Buffer.BlockCopy(msgBuffer, 0, sendBuffer, msgLength + 2, msgBuffer.Length);
-                    
+                //Buffer.BlockCopy(prefixBuffer, 0, sendBuffer, msgLength, 2);
+                //Buffer.BlockCopy(msgBuffer, 0, sendBuffer, msgLength + 2, msgBuffer.Length);
+
                 // Prepare arguments for send/receive operation.
                 SocketAsyncEventArgs completeArgs = new SocketAsyncEventArgs();
                 completeArgs.SetBuffer(sendBuffer, 0, sendBuffer.Length);
@@ -217,6 +232,12 @@ namespace IOCPDemo
             {
                 throw new SocketException((Int32)SocketError.NotConnected);
             }
+        }
+
+        private Int32 GetMessageID()
+        {
+            TimeSpan t = (DateTime.UtcNow - new DateTime(1970, 1, 1));
+            return (Int32)t.TotalSeconds;
         }
 
         #region IDisposable Members

@@ -150,7 +150,8 @@ namespace IOCPDemo
 
         private void OnMessageReceived(object sender, MessageEventArgs e)
         {
-            Console.WriteLine("OnMessageReceived. id: {0}, msg: {1}", e.MessageID, e.Message);
+            dynamic message = e.Message;
+            Console.WriteLine("OnMessageReceived. id: {0}, msg: {1}", message.ID, message.Message);
         }
 
         /// <summary>

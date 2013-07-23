@@ -5,21 +5,19 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Net.Sockets;
 using System.Threading;
+using System.IO;
+using ProtoBuf;
 
 namespace IOCPDemo
 {
     // 消息的封装
     internal class MessageEventArgs : EventArgs
     {
-        public static Int32 NextMessageID = 1;
+        public readonly BaseMessage Message;
 
-        public readonly String Message;
-        public readonly Int32 MessageID;
-
-        internal MessageEventArgs(String message, Int32 messageID)
+        internal MessageEventArgs(BaseMessage message)
         {
             this.Message = message;
-            this.MessageID = messageID;
         }
     }
 
@@ -41,9 +39,12 @@ namespace IOCPDemo
         internal Int32 receivePrefixBytesDoneThisOp = 0;
         internal Int32 lengthOfCurrentIncomingMessage = -1;
 
+        private MessageSerializer serializer;
+
         internal MessageUserToken()
         {
             bufferReceived = new Byte[] {};
+            serializer = new MessageSerializer();
             Console.WriteLine("MessageUserToken:bufferReceived: {0}", bufferReceived);
         }
 
@@ -117,19 +118,11 @@ namespace IOCPDemo
             Console.WriteLine("MessageUserToken:Reset:");
         }
 
-        private void HandleMessage(Byte[] buffer)
-        {
-            String message = Encoding.UTF8.GetString(buffer);
-            Console.WriteLine("HandleMessage: {0}, {1}", message.Length, message);
-        }
-
         private void HandleMessage(Byte[] buffer, Int32 index, Int32 count)
         {
-            String message = Encoding.UTF8.GetString(buffer, index, count);
-            Console.WriteLine("HandleMessage: {0}, {1}", message.Length, message);
 
-            Int32 msgID = Interlocked.Increment(ref MessageEventArgs.NextMessageID);
-            MessageEventArgs e = new MessageEventArgs(message, msgID);
+            BaseMessage message = (BaseMessage)serializer.Deserialize(buffer, index, count);
+            MessageEventArgs e = new MessageEventArgs(message);
             EventHandler<MessageEventArgs> temp = Volatile.Read(ref MessageReceived);
             if (temp != null)
             {
