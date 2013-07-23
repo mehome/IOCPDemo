@@ -16,7 +16,7 @@ namespace IOCPDemo
 
         private static int port = 9091;
 
-        private static int maxClients = 5;
+        private static int maxClients = 1;
 
         private static Server server;
 

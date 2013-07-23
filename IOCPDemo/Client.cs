@@ -187,8 +187,16 @@ namespace IOCPDemo
             if (this.connected)
             {
                 // Create a buffer to send.
-                Byte[] sendBuffer = Encoding.ASCII.GetBytes(message);
+                Byte[] msgBuffer = Encoding.ASCII.GetBytes(message);
+                Byte[] prefixBuffer = BitConverter.GetBytes((Int16)Buffer.ByteLength(msgBuffer));
+                Int32 msgLength = 2 + msgBuffer.Length;
+                Byte[] sendBuffer = new Byte[msgLength * 2];
 
+                Buffer.BlockCopy(prefixBuffer, 0, sendBuffer, 0, 2);
+                Buffer.BlockCopy(msgBuffer, 0, sendBuffer, 2, msgBuffer.Length);
+                Buffer.BlockCopy(prefixBuffer, 0, sendBuffer, msgLength, 2);
+                Buffer.BlockCopy(msgBuffer, 0, sendBuffer, msgLength + 2, msgBuffer.Length);
+                    
                 // Prepare arguments for send/receive operation.
                 SocketAsyncEventArgs completeArgs = new SocketAsyncEventArgs();
                 completeArgs.SetBuffer(sendBuffer, 0, sendBuffer.Length);

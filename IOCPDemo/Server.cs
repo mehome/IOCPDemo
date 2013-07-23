@@ -66,7 +66,6 @@ namespace IOCPDemo
                 eventArg.Completed += new EventHandler<SocketAsyncEventArgs>(OnIOCompleted);
                 eventArg.SetBuffer(new Byte[this.bufferSize], 0, this.bufferSize);
                 Console.WriteLine("Server:initEventArg: {0}", eventArg.GetHashCode());
-
                 // 将预分配的对象加入SocketAsyncEventArgs对象池中
                 eventArgsPool.Push(eventArg);
             }
