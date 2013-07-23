@@ -16,11 +16,13 @@ namespace IOCPDemo
 
         private static int port = 9091;
 
-        private static int maxClients = 1;
+        private static int maxClients = 5;
 
         private static Server server;
 
         private static List<Client> clients;
+
+        private static Int32 clientId;
 
         static void Main(string[] args)
         {
@@ -33,7 +35,7 @@ namespace IOCPDemo
 
             for (int i = 0; i < maxClients; i++)
             {
-                ThreadPool.QueueUserWorkItem(o => StartClientAndSendMessage(i, "hello"));
+                ThreadPool.QueueUserWorkItem(o => StartClientAndSendMessage("hello"));
             }
 
             Console.WriteLine("Press any key to exit...");
@@ -47,10 +49,12 @@ namespace IOCPDemo
             server.Start(port);
         }
 
-        private static Client StartClient(int i)
+        private static Client StartClient()
         {
-            Console.WriteLine("StartClient: {0}", i);
-            Client client = new Client(i, "localhost", port);
+            clientId = Interlocked.Increment(ref clientId);
+
+            Console.WriteLine("StartClient: {0}", clientId);
+            Client client = new Client(clientId, "localhost", port);
             client.Connect();
             clients.Add(client);
             Console.WriteLine("Add client #{0} to list. size: {1}", client.index, clients.Count);
@@ -67,10 +71,10 @@ namespace IOCPDemo
             }
         }
 
-        private static void StartClientAndSendMessage(Int32 index, String message)
+        private static void StartClientAndSendMessage(String message)
         {
-            Client client = StartClient(index);
-
+            Client client = StartClient();
+            message += " from client #" + client.index.ToString();
             // Create a timer with a ten second interval.
             System.Timers.Timer t = new System.Timers.Timer(2000);
 
@@ -78,7 +82,7 @@ namespace IOCPDemo
             t.Elapsed += new ElapsedEventHandler((o, e) => client.SendReceive(message));
 
             // Set the Interval to 2 seconds (2000 milliseconds).
-            t.Interval = 10000;
+            t.Interval = 5000;
             t.Enabled = true;
             t.Start();
         }
