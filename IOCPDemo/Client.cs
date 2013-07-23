@@ -97,6 +97,7 @@ namespace IOCPDemo
             if (errorCode != SocketError.Success)
             {
                 throw new SocketException((Int32)errorCode);
+                //Console.WriteLine("SocketException: {0}", errorCode);
             }
         }
 

@@ -14,7 +14,7 @@ namespace IOCPDemo
     class Program
     {
 
-        private static int port = 9091;
+        private static int port = 909;
 
         private static int maxClients = 1;
 
@@ -54,7 +54,7 @@ namespace IOCPDemo
             clientId = Interlocked.Increment(ref clientId);
 
             Console.WriteLine("StartClient: {0}", clientId);
-            Client client = new Client(clientId, "localhost", port);
+            Client client = new Client(clientId, "192.168.0.111", port);
             client.Connect();
             clients.Add(client);
             Console.WriteLine("Add client #{0} to list. size: {1}", client.index, clients.Count);

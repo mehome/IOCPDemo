@@ -38,6 +38,7 @@ namespace IOCPDemo
         internal Int32 receivedMessageBytesDoneCount = 0;
         internal Int32 receivePrefixBytesDoneThisOp = 0;
         internal Int32 lengthOfCurrentIncomingMessage = -1;
+        private Int32 maxMessageLength = 8192;
 
         private MessageSerializer serializer;
 
@@ -81,6 +82,14 @@ namespace IOCPDemo
                     lengthOfCurrentIncomingMessage = (Int32) BitConverter.ToInt16(bufferReceived, offset);
                 }
                 Console.WriteLine("Got prefix length: {0}", lengthOfCurrentIncomingMessage);
+                if (lengthOfCurrentIncomingMessage > maxMessageLength)
+                {
+                    lengthOfCurrentIncomingMessage = -1;
+                    bufferReceived = new Byte[] {};
+                    Console.WriteLine("Prefix length to large. May be a bad message. Drop it!");
+                    return;
+                }
+
                 // 如果消息还没有接受完成的话
                 if (bufferReceived.Length - offset - 2 < lengthOfCurrentIncomingMessage)
                 {
