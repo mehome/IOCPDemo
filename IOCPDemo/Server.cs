@@ -290,7 +290,7 @@ namespace IOCPDemo
                     else
                     {
                         //已经达到最大客户连接数量，在这接受连接，发送“连接已经达到最大数”，然后断开连接
-                        s.Send(Encoding.Default.GetBytes("连接已经达到最大数!"));
+                        //s.Send(Encoding.Default.GetBytes("连接已经达到最大数!"));
                         Console.WriteLine("[Server] Max client connections");
                         s.Close();
                     }

@@ -79,8 +79,8 @@ namespace IOCPDemo
             SocketError errorCode = connectArgs.SocketError;
             if (errorCode != SocketError.Success)
             {
-                throw new SocketException((Int32)errorCode);
-                //Console.WriteLine("SocketException: {0}", errorCode);
+                //throw new SocketException((Int32)errorCode);
+                Console.WriteLine("SocketException: {0}", errorCode);
             }
         }
 

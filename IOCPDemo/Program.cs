@@ -14,9 +14,9 @@ namespace IOCPDemo
     class Program
     {
 
-        private static int port = 909;
+        private static int port = 9091;
 
-        private static int maxClients = 1;
+        private static int maxClients = 5;
 
         private static Server server;
 
@@ -35,7 +35,7 @@ namespace IOCPDemo
             Console.WriteLine("Press any key to create client...");
             Console.ReadKey();
 
-            for (int i = 0; i < maxClients; i++)
+            for (int i = 0; i < (maxClients + 1); i++)
             {
                 ThreadPool.QueueUserWorkItem(o => StartClientAndSendMessage("hello"));
             }
@@ -70,14 +70,17 @@ namespace IOCPDemo
 
         private static Client StartClient()
         {
-            clientId = Interlocked.Increment(ref clientId);
+            lock (clients)
+            {
+                clientId = Interlocked.Increment(ref clientId);
 
-            Console.WriteLine("[Client] StartClient: {0}", clientId);
-            Client client = new Client(clientId, "127.0.0.1", port);
-            client.Connect();
-            clients.Add(client);
-            Console.WriteLine("[Client] Add client #{0} to list. size: {1}", client.index, clients.Count);
-            return client;
+                Console.WriteLine("[Client] StartClient: {0}", clientId);
+                Client client = new Client(clientId, "127.0.0.1", port);
+                client.Connect();
+                clients.Add(client);
+                Console.WriteLine("[Client] Add client #{0} to list. size: {1}", client.index, clients.Count);
+                return client;
+            }
         }
 
         private static void SendMessageToAllClients(Object sender, EventArgs e)
