@@ -133,16 +133,22 @@ namespace IOCPDemo
         private void ProcessHelloMessage(SocketAsyncEventArgs e, HelloMessage msg)
         {
             Console.WriteLine("[Server] ProcessHelloMessage: received client msg: '{0}'.", msg.Message);
-            Console.WriteLine("[Server] ProcessHelloMessage: send welcome message back to client.");
             HelloMessage welcomeMsg = new HelloMessage
             {
                 Type = (Int32)MessageType.Hello,
                 Direction = (Int32)MessageDirection.FromServer,
                 ID = msg.ID,
                 SessionID = msg.SessionID,
-                Message = "Welcome to server. client #" + msg.SessionID.ToString(),
+                Message = "Welcome. client #" + msg.SessionID.ToString(),
             };
+            Console.WriteLine("[Server] ProcessHelloMessage: send welcome msg: '{0}'", welcomeMsg.Message);
+
             Byte[] buffer = this.serializer.SerializeWithPrefix(welcomeMsg);
+            if (buffer.Length > e.Buffer.Length)
+            {
+                Console.WriteLine("[Server] Message is too long to send. max: {0}, current: {1}", e.Buffer.Length, buffer.Length);
+                return;
+            }
             Socket socket = e.AcceptSocket;
             Buffer.BlockCopy(buffer, 0, e.Buffer, 0, buffer.Length);
             //投递发送请求，这个函数有可能同步发送出去，这时返回false，并且不会引发SocketAsyncEventArgs.Completed事件
@@ -165,13 +171,15 @@ namespace IOCPDemo
                 {
                     Socket s = e.AcceptSocket;
                     //判断所有需接收的数据是否已经完成
-                    //Console.WriteLine("ProcessReceive:Available: {0}", s.Available);
+                    Console.WriteLine("[Server] ProcessReceive:Available: {0}, EvenArgs: {1}", s.Available, e.GetHashCode());
                     //Console.WriteLine("ProcessReceive:e: {0}", e.GetHashCode());
+
+                    // 处理接收到的数据
+                    MessageUserToken messageUserToken = (MessageUserToken)e.UserToken;
+                    messageUserToken.ProcessBuffer(e);
                     if (s.Available == 0)
                     {
-                        // 处理接收到的数据
-                        MessageUserToken messageUserToken = (MessageUserToken)e.UserToken;
-                        messageUserToken.ProcessBuffer(e);
+                        Console.Write("[Server] Buffer is received.");
                     }
      
                     //为接收下一段数据，投递接收请求，这个函数有可能同步完成，这时返回false，并且不会引发SocketAsyncEventArgs.Completed事件

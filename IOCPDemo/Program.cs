@@ -16,7 +16,7 @@ namespace IOCPDemo
 
         private static int port = 9091;
 
-        private static int maxClients = 5;
+        private static int maxClients = 1;
 
         private static Server server;
 
@@ -35,9 +35,9 @@ namespace IOCPDemo
             Console.WriteLine("Press any key to create client...");
             Console.ReadKey();
 
-            for (int i = 0; i < (maxClients + 1); i++)
+            for (int i = 0; i < maxClients; i++)
             {
-                ThreadPool.QueueUserWorkItem(o => StartClientAndSendMessage("hello"));
+                ThreadPool.QueueUserWorkItem(o => StartClientAndSendMessage("hello hello hello hello hello hello hello hello hello"));
             }
 
             Console.WriteLine("Press any key to exit...");
@@ -64,7 +64,7 @@ namespace IOCPDemo
         private static void StartServer()
         {
             Console.WriteLine("[Server] StartServer");
-            server = new Server(maxClients, 1024);
+            server = new Server(maxClients, 32);
             server.Start(port);
         }
 

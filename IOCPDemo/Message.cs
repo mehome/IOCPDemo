@@ -97,11 +97,10 @@ namespace IOCPDemo
         {
 
             HelloMessage msg;
-            using (var ms = new MemoryStream(buffer))
+            using (var ms = new MemoryStream(buffer, index, count))
             {
                 //Console.WriteLine("before pos: {0}", ms.Position);
-
-                ms.Write(buffer, 0, buffer.Length);
+                //ms.Write(buffer, 0, buffer.Length);
                 //Console.WriteLine("array: {0}", MessageSerializer.ByteArrayToHex(ms.ToArray()));
                 //ms.Write(buffer, 0, Buffer.ByteLength(buffer));
                 msg = Serializer.Deserialize<HelloMessage>(ms);
