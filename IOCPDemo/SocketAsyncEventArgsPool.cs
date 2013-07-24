@@ -42,7 +42,14 @@ namespace IOCPDemo
             //Console.WriteLine("SocketAsyncEventArgsPool:pop");
             lock (this.pool)
             {
-                return this.pool.Count > 0 ? this.pool.Pop() : null;
+                try
+                {
+                    return this.pool.Count > 0 ? this.pool.Pop() : null;
+                }
+                catch
+                {
+                    return null;
+                }
             }
         }
 
