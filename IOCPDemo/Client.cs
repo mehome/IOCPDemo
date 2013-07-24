@@ -12,41 +12,27 @@ using System.IO;
 namespace IOCPDemo
 {
 
-    /// <summary>
-    /// Implements the connection logic for the socket client.
-    /// </summary>
+    // Implements the connection logic for the socket client.
     class Client : IDisposable
     {
         public Int32 index;
 
-        /// <summary>
-        /// Constants for socket operations.
-        /// </summary>
+        // Constants for socket operations.
         private const Int32 ReceiveOperation = 1, SendOperation = 0;
 
-        /// <summary>
-        /// The socket used to send/receive messages.
-        /// </summary>
+        // The socket used to send/receive messages.
         private Socket clientSocket;
 
-        /// <summary>
-        /// Flag for connected socket.
-        /// </summary>
+        // Flag for connected socket.
         private Boolean connected = false;
 
-        /// <summary>
-        /// Listener endpoint.
-        /// </summary>
+        // Listener endpoint.
         private IPEndPoint hostEndPoint;
 
-        /// <summary>
-        /// Signals a connection.
-        /// </summary>
+        // Signals a connection.
         private static AutoResetEvent autoConnectEvent = new AutoResetEvent(false); 
 
-        /// <summary>
-        /// Signals the send/receive operation.
-        /// </summary>
+        // Signals the send/receive operation.
         private static AutoResetEvent[] autoSendReceiveEvents = new AutoResetEvent[]
         {
             new AutoResetEvent(false),
@@ -55,13 +41,11 @@ namespace IOCPDemo
 
         private MessageSerializer serializer;
 
-        /// <summary>
-        /// Create an uninitialized client instance.  
-        /// To start the send/receive processing
-        /// call the Connect method followed by SendReceive method.
-        /// </summary>
-        /// <param name="hostName">Name of the host where the listener is running.</param>
-        /// <param name="port">Number of the TCP port from the listener.</param>
+        private MessageUserToken messageUserToken;
+
+        // Create an uninitialized client instance.  
+        // To start the send/receive processing
+        // call the Connect method followed by SendReceive method.
         internal Client(Int32 index, String hostName, Int32 port)
         {
             // Get host related information.
@@ -75,15 +59,14 @@ namespace IOCPDemo
             this.clientSocket = new Socket(this.hostEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
             this.index = index;
             this.serializer = new MessageSerializer();
+            this.messageUserToken = new MessageUserToken();
+            this.messageUserToken.MessageReceived += new EventHandler<MessageEventArgs>(OnMessageReceived);
         }
 
-        /// <summary>
-        /// Connect to the host.
-        /// </summary>
-        /// <returns>True if connection has succeded, else false.</returns>
+        // Connect to the host.
         internal void Connect()
         {
-            Console.WriteLine("Client #{0} connect", index);
+            Console.WriteLine("[Client] Client #{0} starts connecting", index);
             SocketAsyncEventArgs connectArgs = new SocketAsyncEventArgs();
 
             connectArgs.UserToken = this.clientSocket;
@@ -101,33 +84,40 @@ namespace IOCPDemo
             }
         }
 
-        /// <summary>
-        /// Disconnect from the host.
-        /// </summary>
+        // Disconnect from the host.
         internal void Disconnect()
         {
-            Console.WriteLine("Client #{0} disconnected", index);
+            Console.WriteLine("[Client] Client #{0} disconnected", index);
             clientSocket.Disconnect(false);
         }
 
         private void OnConnect(object sender, SocketAsyncEventArgs e)
         {
-            Console.WriteLine("Client #{0} OnConnect", index);
             // Signals the end of connection.
             autoConnectEvent.Set();
 
             // Set the flag for socket connected.
             this.connected = (e.SocketError == SocketError.Success);
+            Console.WriteLine("[Client] Client #{0} is connected: {1}", index, this.connected);
         }
 
         private void OnReceive(object sender, SocketAsyncEventArgs e)
         {
             // Signals the end of receive.
             autoSendReceiveEvents[SendOperation].Set();
+            //Console.WriteLine("[Client] OnReceive: {0}", e.GetHashCode());
+            messageUserToken.ProcessBuffer(e);
+        }
+
+        private void OnMessageReceived(object sender, MessageEventArgs e)
+        {
+             HelloMessage msg = (HelloMessage) e.Message;
+             Console.WriteLine("[Client] OnMessageReceived: received server msg: '{0}'.", msg.Message);
         }
 
         private void OnSend(object sender, SocketAsyncEventArgs e)
         {
+            //Console.WriteLine("[Client] OnSend: {0}", e.GetHashCode());
             // Signals the end of send.
             autoSendReceiveEvents[ReceiveOperation].Set();
 
@@ -138,10 +128,12 @@ namespace IOCPDemo
                     // Prepare receiving.
                     Socket s = e.UserToken as Socket;
 
+                    SocketAsyncEventArgs receiveArg = new SocketAsyncEventArgs();
+                    receiveArg.AcceptSocket = s;
                     byte[] receiveBuffer = new byte[255];
-                    e.SetBuffer(receiveBuffer, 0, receiveBuffer.Length);
-                    e.Completed += new EventHandler<SocketAsyncEventArgs>(OnReceive);
-                    s.ReceiveAsync(e);
+                    receiveArg.SetBuffer(receiveBuffer, 0, receiveBuffer.Length);
+                    receiveArg.Completed += new EventHandler<SocketAsyncEventArgs>(OnReceive);
+                    s.ReceiveAsync(receiveArg);
                 }
             }
             else
@@ -150,10 +142,7 @@ namespace IOCPDemo
             }
         }
 
-        /// <summary>
-        /// Close socket in case of failure and throws a SockeException according to the SocketError.
-        /// </summary>
-        /// <param name="e">SocketAsyncEventArg associated with the failed operation.</param>
+        // Close socket in case of failure and throws a SockeException according to the SocketError.
         private void ProcessError(SocketAsyncEventArgs e)
         {
             Socket s = e.UserToken as Socket;
@@ -181,37 +170,29 @@ namespace IOCPDemo
             throw new SocketException((Int32)e.SocketError);
         }
 
-        /// <summary>
-        /// Exchange a message with the host.
-        /// </summary>
-        /// <param name="message">Message to send.</param>
-        /// <returns>Message sent by the host.</returns>
+        // Exchange a message with the host.
         internal String SendReceive(String message)
         {
-            Console.WriteLine("Client #{0}, send receive: {1}, connected: {2}", index, message, connected);
+            Console.WriteLine("[Client] Client #{0}, send receive: {1}, connected: {2}", index, message, connected);
             if (this.connected)
             {
                 // Use google buf
                 HelloMessage helloMessage = new HelloMessage
                 {
+                    Type = (Int32)MessageType.Hello,
                     ID = this.GetMessageID(),
-                    Direction = MessageDirection.FromClient,
-                    Message = message
+                    Direction = (Int32)MessageDirection.FromClient,
+                    Message = message,
+                    SessionID = this.index,
                 };
-                MemoryStream stream = new MemoryStream();
-                ProtoBuf.Serializer.Serialize(stream, helloMessage);
-                Byte[] msgBuffer = this.serializer.Serialize(helloMessage);
-            
-                // Create a buffer to send.
-                //Byte[] msgBuffer = Encoding.ASCII.GetBytes(message);
-                Byte[] prefixBuffer = BitConverter.GetBytes((Int16)Buffer.ByteLength(msgBuffer));
-                Int32 msgLength = 2 + msgBuffer.Length;
-                Byte[] sendBuffer = new Byte[msgLength];
+                //Console.WriteLine("[Client] Message serialize: {0}, {1}, {2}, {3}", helloMessage.Type, helloMessage.ID, helloMessage.Message, helloMessage.Direction);
+                //Byte[] rawBuffer = this.serializer.Serialize(helloMessage);
+                //HelloMessage backMessage = this.serializer.Deserialize(rawBuffer, 0, rawBuffer.Length);
+                //HelloMessage backMessage = this.serializer.Deserialize(rawBuffer);
+                //Console.WriteLine("[Client] Message deserialize: {0}, {1}, {2}, {3}", backMessage.Type, backMessage.ID, backMessage.Message, backMessage.Direction);
 
-                Buffer.BlockCopy(prefixBuffer, 0, sendBuffer, 0, 2);
-                Buffer.BlockCopy(msgBuffer, 0, sendBuffer, 2, msgBuffer.Length);
-                //Buffer.BlockCopy(prefixBuffer, 0, sendBuffer, msgLength, 2);
-                //Buffer.BlockCopy(msgBuffer, 0, sendBuffer, msgLength + 2, msgBuffer.Length);
+
+                Byte[] sendBuffer = this.serializer.SerializeWithPrefix(helloMessage);
 
                 // Prepare arguments for send/receive operation.
                 SocketAsyncEventArgs completeArgs = new SocketAsyncEventArgs();
@@ -227,7 +208,7 @@ namespace IOCPDemo
                 AutoResetEvent.WaitAll(autoSendReceiveEvents);
 
                 // Return data from SocketAsyncEventArgs buffer.
-                return Encoding.ASCII.GetString(completeArgs.Buffer, completeArgs.Offset, completeArgs.BytesTransferred);
+                return message;
             }
             else
             {
@@ -235,17 +216,17 @@ namespace IOCPDemo
             }
         }
 
+        // Use Current timestamp as message id
         private Int32 GetMessageID()
         {
-            TimeSpan t = (DateTime.UtcNow - new DateTime(1970, 1, 1));
-            return (Int32)t.TotalSeconds;
+            return 1;
+            //TimeSpan t = (DateTime.UtcNow - new DateTime(1970, 1, 1));
+            //return (Int32)t.TotalSeconds;
         }
 
         #region IDisposable Members
 
-        /// <summary>
-        /// Disposes the instance of SocketClient.
-        /// </summary>
+        // Disposes the instance of SocketClient.
         public void Dispose()
         {
             autoConnectEvent.Close();

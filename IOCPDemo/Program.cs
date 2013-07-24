@@ -26,6 +26,8 @@ namespace IOCPDemo
 
         static void Main(string[] args)
         {
+            //TestProtoBuf();
+            
             clients = new List<Client>();
 
             StartServer();
@@ -42,9 +44,26 @@ namespace IOCPDemo
             Console.ReadKey();
         }
 
+        private static void TestProtoBuf()
+        {
+            MessageSerializer serializer = new MessageSerializer();
+            HelloMessage msg = new HelloMessage
+            {
+                Type = 1,
+                ID = 2,
+                Direction = 3,
+                Message = "4"
+            };
+            Console.WriteLine("[Client] serialize: {0}, {1}, {2}, {3}", msg.Type, msg.ID, msg.Message, msg.Direction);
+            Byte[] rawBuffer = serializer.Serialize(msg);
+            Console.WriteLine("[Client] buffer: {0}", MessageSerializer.ByteArrayToHex(rawBuffer));
+            HelloMessage bmsg = serializer.Deserialize(rawBuffer);
+            Console.WriteLine("[Client] deserialize: {0}, {1}, {2}, {3}", bmsg.Type, bmsg.ID, bmsg.Message, bmsg.Direction);
+        }
+
         private static void StartServer()
         {
-            Console.WriteLine("StartServer");
+            Console.WriteLine("[Server] StartServer");
             server = new Server(maxClients, 1024);
             server.Start(port);
         }
@@ -53,20 +72,20 @@ namespace IOCPDemo
         {
             clientId = Interlocked.Increment(ref clientId);
 
-            Console.WriteLine("StartClient: {0}", clientId);
-            Client client = new Client(clientId, "192.168.0.111", port);
+            Console.WriteLine("[Client] StartClient: {0}", clientId);
+            Client client = new Client(clientId, "127.0.0.1", port);
             client.Connect();
             clients.Add(client);
-            Console.WriteLine("Add client #{0} to list. size: {1}", client.index, clients.Count);
+            Console.WriteLine("[Client] Add client #{0} to list. size: {1}", client.index, clients.Count);
             return client;
         }
 
         private static void SendMessageToAllClients(Object sender, EventArgs e)
         {
-            Console.WriteLine("SendMessageToAllClients. size: {0}", clients.Count);
+            Console.WriteLine("[Client] SendMessageToAllClients. size: {0}", clients.Count);
             foreach (Client c in clients)
             {
-                Console.WriteLine("Send message to client #{0}", c.index);
+                Console.WriteLine("[Client] Send message to client #{0}", c.index);
                 c.SendReceive("hello");
             }
         }

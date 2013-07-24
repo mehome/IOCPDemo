@@ -39,7 +39,7 @@ namespace IOCPDemo
         // returns SocketAsyncEventArgs removed from the pool.
         internal SocketAsyncEventArgs Pop()
         {
-            Console.WriteLine("SocketAsyncEventArgsPool:pop");
+            //Console.WriteLine("SocketAsyncEventArgsPool:pop");
             lock (this.pool)
             {
                 return this.pool.Pop();
@@ -56,7 +56,7 @@ namespace IOCPDemo
             }
             lock (this.pool)
             {
-                Console.WriteLine("SocketAsyncEventArgsPool:push");
+                //Console.WriteLine("SocketAsyncEventArgsPool:push");
                 this.pool.Push(item);
             }
         }

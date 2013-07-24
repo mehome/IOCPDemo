@@ -11,8 +11,8 @@ namespace IOCPDemo
 
     enum MessageType
     {
-        Hello,
-        Goodbye,
+        Hello = 1,
+        Goodbye = 2,
     }
 
     enum MessageDirection
@@ -22,67 +22,94 @@ namespace IOCPDemo
     }
 
     [ProtoContract]
-    internal class BaseMessage
-    {
-        public MessageType Type;
-    }
-
-    [ProtoContract]
-    internal class HelloMessage : BaseMessage
+    internal class HelloMessage
     {
         [ProtoMember(1)]
-        public MessageType Type = MessageType.Hello;
+        public Int32 Type = (Int32)MessageType.Hello;
         [ProtoMember(2)]
         public Int32 ID { get; set; }
         [ProtoMember(3)]
-        public MessageDirection Direction { get; set; }
+        public Int32 Direction { get; set; }
         [ProtoMember(4)]
         public String Message { get; set; }
-    }
-    
-    [ProtoContract]
-    internal class GoodbyeMessage : BaseMessage
-    {
-        [ProtoMember(1)]
-        public MessageType Type = MessageType.Goodbye;
-        [ProtoMember(2)]
-        public Int32 ID { get; set; }
-        [ProtoMember(3)]
-        public MessageDirection Direction { get; set; }
-        [ProtoMember(4)]
-        public String Message { get; set; }
+        [ProtoMember(5)]
+        public Int32 SessionID { get; set; }
     }
 
     // Protobuf 的封装
     internal class MessageSerializer
     {
-        public Byte[] Serialize(BaseMessage message)
-        {
-            MemoryStream stream = new MemoryStream();
-            ProtoBuf.Serializer.Serialize(stream, message);
-            return stream.GetBuffer();
-        }
 
-        public dynamic Deserialize(Byte[] buffer, Int32 index, Int32 count)
+        public static String ByteArrayToHex(Byte[] buffer)
         {
-            MemoryStream stream = new MemoryStream();
-            stream.Write(buffer, index, count);
-            BaseMessage message = ProtoBuf.Serializer.Deserialize<HelloMessage>(stream);
-            return message;
-        }
-
-        public dynamic ConvertMessage(BaseMessage message)
-        {
-            switch (message.Type)
-            { 
-                case MessageType.Hello:
-                    return (HelloMessage)message;
-                case MessageType.Goodbye:
-                    return (GoodbyeMessage)message;
-                default:
-                    throw new ArgumentException("Invalid message type");
+            String result = "{";
+            foreach (byte b in buffer)
+            {
+                result += " 0x" + Convert.ToString(b, 16).ToUpper().PadLeft(2, '0');
             }
+            result += " }";
+            return result;
         }
+
+        public Byte[] Serialize(HelloMessage message)
+        {
+            //MemoryStream stream = new MemoryStream();
+            //ProtoBuf.Serializer.Serialize(stream, message);
+            //return stream.GetBuffer();
+            Byte[] data;
+            using (var ms = new MemoryStream())
+            {
+                Serializer.Serialize(ms, message);
+                data = ms.ToArray();
+            }
+            return data;
+        }
+
+        public Byte[] SerializeWithPrefix(HelloMessage message)
+        {
+            Byte[] messageBuffer = Serialize(message);
+
+            Byte[] prefixBuffer = BitConverter.GetBytes((Int16)Buffer.ByteLength(messageBuffer));
+            Int32 msgLength = 2 + messageBuffer.Length;
+            Byte[] resultBuffer = new Byte[msgLength];
+
+            Buffer.BlockCopy(prefixBuffer, 0, resultBuffer, 0, 2);
+            Buffer.BlockCopy(messageBuffer, 0, resultBuffer, 2, messageBuffer.Length);
+            return resultBuffer;
+        }
+
+        // 解析其他类型的消息
+        public HelloMessage Deserialize(Byte[] buffer)
+        {
+
+            HelloMessage msg;
+            using (var ms = new MemoryStream(buffer))
+            {
+                //Console.WriteLine("array: {0}", MessageSerializer.ByteArrayToHex(ms.ToArray()));
+                msg = Serializer.Deserialize<HelloMessage>(ms);
+
+            }
+            return msg;
+        }
+
+        // 解析其他类型的消息
+        public HelloMessage Deserialize(Byte[] buffer, Int32 index, Int32 count)
+        {
+
+            HelloMessage msg;
+            using (var ms = new MemoryStream(buffer))
+            {
+                //Console.WriteLine("before pos: {0}", ms.Position);
+
+                ms.Write(buffer, 0, buffer.Length);
+                //Console.WriteLine("array: {0}", MessageSerializer.ByteArrayToHex(ms.ToArray()));
+                //ms.Write(buffer, 0, Buffer.ByteLength(buffer));
+                msg = Serializer.Deserialize<HelloMessage>(ms);
+                //Console.WriteLine("after pos: {0}", ms.Position);
+            }
+            return msg;
+        }
+
     }
 
 }
