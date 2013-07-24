@@ -77,7 +77,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BufferManager.cs" />
     <Compile Include="Client.cs" />
     <Compile Include="Message.cs" />
     <Compile Include="MessageUserToken.cs" />

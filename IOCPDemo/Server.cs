@@ -44,7 +44,7 @@ namespace IOCPDemo
             eventArgsPool = new SocketAsyncEventArgsPool(numConnections);
             serializer = new MessageSerializer();
 
-            // 为IoContextPool预分配SocketAsyncEventArgs对象
+            // 为连接池预分配 SocketAsyncEventArgs 对象
             for (Int32 i = 0; i < this.numConnections; i++)
             {
                 SocketAsyncEventArgs eventArg = new SocketAsyncEventArgs();
@@ -139,24 +139,23 @@ namespace IOCPDemo
                 Direction = (Int32)MessageDirection.FromServer,
                 ID = msg.ID,
                 SessionID = msg.SessionID,
-                Message = "Welcome. client #" + msg.SessionID.ToString(),
+                Message = "Welcome to server. client #" + msg.SessionID.ToString(),
             };
             Console.WriteLine("[Server] ProcessHelloMessage: send welcome msg: '{0}'", welcomeMsg.Message);
 
             Byte[] buffer = this.serializer.SerializeWithPrefix(welcomeMsg);
-            if (buffer.Length > e.Buffer.Length)
-            {
-                Console.WriteLine("[Server] Message is too long to send. max: {0}, current: {1}", e.Buffer.Length, buffer.Length);
-                return;
-            }
+            SocketAsyncEventArgs sendEventArgs = new SocketAsyncEventArgs();
+            sendEventArgs.AcceptSocket = e.AcceptSocket;
+            sendEventArgs.Completed += new EventHandler<SocketAsyncEventArgs>(OnIOCompleted);
+            sendEventArgs.SetBuffer(buffer, 0, buffer.Length);
+            sendEventArgs.UserToken = e;
             Socket socket = e.AcceptSocket;
-            Buffer.BlockCopy(buffer, 0, e.Buffer, 0, buffer.Length);
+            //Buffer.BlockCopy(buffer, 0, e.Buffer, 0, buffer.Length);
             //投递发送请求，这个函数有可能同步发送出去，这时返回false，并且不会引发SocketAsyncEventArgs.Completed事件
-            e.SetBuffer(0, buffer.Length);
-            if (!socket.SendAsync(e))
+            if (!socket.SendAsync(sendEventArgs))
             {
                 // 同步发送时处理发送完成事件
-                ProcessSend(e);
+                ProcessSend(sendEventArgs);
             }
         }
 
@@ -177,13 +176,13 @@ namespace IOCPDemo
                     // 处理接收到的数据
                     MessageUserToken messageUserToken = (MessageUserToken)e.UserToken;
                     messageUserToken.ProcessBuffer(e);
-                    if (s.Available == 0)
-                    {
-                        Console.Write("[Server] Buffer is received.");
-                    }
+                    //if (s.Available == 0)
+                    //{
+                    //    Console.Write("[Server] Buffer is received.");
+                    //}
      
                     //为接收下一段数据，投递接收请求，这个函数有可能同步完成，这时返回false，并且不会引发SocketAsyncEventArgs.Completed事件
-                    else if (!s.ReceiveAsync(e))
+                    if (!s.ReceiveAsync(e))
                     {
                         // 同步接收时处理接收完成事件
                         this.ProcessReceive(e);
@@ -206,19 +205,20 @@ namespace IOCPDemo
             //Console.WriteLine("ProcessSend:e: {0}", e.GetHashCode());
             if (e.SocketError == SocketError.Success)
             {
-                Socket s = e.AcceptSocket;
+                // Push to sendEventArgs
+                //Socket s = e.AcceptSocket;
 
                 //接收时根据接收的字节数收缩了缓冲区的大小，因此投递接收请求时，恢复缓冲区大小
-                e.SetBuffer(0, bufferSize);
-                if (!s.ReceiveAsync(e))     //投递接收请求
-                {
-                    // 同步接收时处理接收完成事件
-                    this.ProcessReceive(e);
-                }
+                //e.SetBuffer(0, bufferSize);
+                //if (!s.ReceiveAsync(e))     //投递接收请求
+                //{
+                //    // 同步接收时处理接收完成事件
+                //    this.ProcessReceive(e);
+                //}
             }
             else
             {
-                this.ProcessError(e);
+                this.ProcessError((SocketAsyncEventArgs)e.UserToken);
             }
         }
 
@@ -305,8 +305,7 @@ namespace IOCPDemo
                 }
                 catch (SocketException ex)
                 {
-                    Socket token = e.AcceptSocket;
-                    Console.WriteLine("[Server] Error when processing data received from {0}: {1}", token.RemoteEndPoint, ex.ToString());
+                    Console.WriteLine("[Server] Error when processing data received from {0}: {1}", e.AcceptSocket.RemoteEndPoint, ex.ToString());
                 }
                 catch (Exception ex)
                 {
@@ -315,6 +314,7 @@ namespace IOCPDemo
                 // 投递下一个接受请求
                 this.StartAccept(e);
             }
+
         }
 
         // 从客户端开始接受一个连接操作
@@ -324,17 +324,12 @@ namespace IOCPDemo
             {
                 acceptEventArg = new SocketAsyncEventArgs();
                 acceptEventArg.Completed += new EventHandler<SocketAsyncEventArgs>(OnAcceptCompleted);
-                //Console.WriteLine("StartAccept:newEventArg: {0}", acceptEventArg.GetHashCode());
-
             }
             else
             {
-                //Console.WriteLine("StartAccept:eventArg: {0}", acceptEventArg.GetHashCode());
                 // 重用前进行对象清理
                 acceptEventArg.AcceptSocket = null;
-                //Console.WriteLine("Need to clean AcceptSocket?");
             }
-
             if (!this.listenSocket.AcceptAsync(acceptEventArg))
             {
                 this.ProcessAccept(acceptEventArg);

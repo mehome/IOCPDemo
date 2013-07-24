@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using ProtoBuf;
 using System.IO;
+using System.ServiceModel.Channels;
 
 namespace IOCPDemo
 {
@@ -51,20 +52,19 @@ namespace IOCPDemo
             return result;
         }
 
+        // 串行化消息
         public Byte[] Serialize(HelloMessage message)
         {
-            //MemoryStream stream = new MemoryStream();
-            //ProtoBuf.Serializer.Serialize(stream, message);
-            //return stream.GetBuffer();
             Byte[] data;
-            using (var ms = new MemoryStream())
+            using (var stream = new MemoryStream())
             {
-                Serializer.Serialize(ms, message);
-                data = ms.ToArray();
+                Serializer.Serialize(stream, message);
+                data = stream.ToArray();
             }
             return data;
         }
 
+        // 串行化消息，并加入消息长度的前缀
         public Byte[] SerializeWithPrefix(HelloMessage message)
         {
             Byte[] messageBuffer = Serialize(message);
@@ -78,33 +78,24 @@ namespace IOCPDemo
             return resultBuffer;
         }
 
-        // 解析其他类型的消息
-        public HelloMessage Deserialize(Byte[] buffer)
+        // 解析某一个类型的消息
+        public T Deserialize<T>(Byte[] buffer)
         {
-
-            HelloMessage msg;
-            using (var ms = new MemoryStream(buffer))
+            T msg;
+            using (var stream = new MemoryStream(buffer))
             {
-                //Console.WriteLine("array: {0}", MessageSerializer.ByteArrayToHex(ms.ToArray()));
-                msg = Serializer.Deserialize<HelloMessage>(ms);
-
+                msg = Serializer.Deserialize<T>(stream);
             }
             return msg;
         }
 
-        // 解析其他类型的消息
-        public HelloMessage Deserialize(Byte[] buffer, Int32 index, Int32 count)
+        // 解析某一个类型的消息
+        public T Deserialize<T>(Byte[] buffer, Int32 index, Int32 count)
         {
-
-            HelloMessage msg;
-            using (var ms = new MemoryStream(buffer, index, count))
+            T msg;
+            using (var stream = new MemoryStream(buffer, index, count))
             {
-                //Console.WriteLine("before pos: {0}", ms.Position);
-                //ms.Write(buffer, 0, buffer.Length);
-                //Console.WriteLine("array: {0}", MessageSerializer.ByteArrayToHex(ms.ToArray()));
-                //ms.Write(buffer, 0, Buffer.ByteLength(buffer));
-                msg = Serializer.Deserialize<HelloMessage>(ms);
-                //Console.WriteLine("after pos: {0}", ms.Position);
+                msg = Serializer.Deserialize<T>(stream);
             }
             return msg;
         }

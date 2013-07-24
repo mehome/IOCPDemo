@@ -16,7 +16,7 @@ namespace IOCPDemo
 
         private static int port = 9091;
 
-        private static int maxClients = 1;
+        private static int maxClients = 5;
 
         private static Server server;
 
@@ -57,7 +57,7 @@ namespace IOCPDemo
             Console.WriteLine("[Client] serialize: {0}, {1}, {2}, {3}", msg.Type, msg.ID, msg.Message, msg.Direction);
             Byte[] rawBuffer = serializer.Serialize(msg);
             Console.WriteLine("[Client] buffer: {0}", MessageSerializer.ByteArrayToHex(rawBuffer));
-            HelloMessage bmsg = serializer.Deserialize(rawBuffer);
+            HelloMessage bmsg = serializer.Deserialize<HelloMessage>(rawBuffer);
             Console.WriteLine("[Client] deserialize: {0}, {1}, {2}, {3}", bmsg.Type, bmsg.ID, bmsg.Message, bmsg.Direction);
         }
 
@@ -104,7 +104,7 @@ namespace IOCPDemo
             t.Elapsed += new ElapsedEventHandler((o, e) => client.SendReceive(message));
 
             // Set the Interval to 2 seconds (2000 milliseconds).
-            t.Interval = 5000;
+            //t.Interval = 5000;
             t.Enabled = true;
             t.Start();
         }

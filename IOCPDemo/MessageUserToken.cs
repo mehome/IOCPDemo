@@ -126,7 +126,7 @@ namespace IOCPDemo
 
         private void HandleMessage(SocketAsyncEventArgs socket, Byte[] buffer, Int32 index, Int32 count)
         {
-            HelloMessage message = (HelloMessage)serializer.Deserialize(buffer, index, count);
+            HelloMessage message = serializer.Deserialize<HelloMessage>(buffer, index, count);
             MessageEventArgs e = new MessageEventArgs(message);
             EventHandler<MessageEventArgs> handler = Volatile.Read(ref MessageReceived);
             if (handler != null)

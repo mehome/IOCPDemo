@@ -113,6 +113,7 @@ namespace IOCPDemo
         {
              HelloMessage msg = (HelloMessage) e.Message;
              Console.WriteLine("[Client] OnMessageReceived: received server msg: '{0}'.", msg.Message);
+             SendReceive("hello again");
         }
 
         private void OnSend(object sender, SocketAsyncEventArgs e)
@@ -130,7 +131,7 @@ namespace IOCPDemo
 
                     SocketAsyncEventArgs receiveArg = new SocketAsyncEventArgs();
                     receiveArg.AcceptSocket = s;
-                    byte[] receiveBuffer = new byte[255];
+                    Byte[] receiveBuffer = new Byte[255];
                     receiveArg.SetBuffer(receiveBuffer, 0, receiveBuffer.Length);
                     receiveArg.Completed += new EventHandler<SocketAsyncEventArgs>(OnReceive);
                     s.ReceiveAsync(receiveArg);
@@ -185,12 +186,6 @@ namespace IOCPDemo
                     Message = message,
                     SessionID = this.index,
                 };
-                //Console.WriteLine("[Client] Message serialize: {0}, {1}, {2}, {3}", helloMessage.Type, helloMessage.ID, helloMessage.Message, helloMessage.Direction);
-                //Byte[] rawBuffer = this.serializer.Serialize(helloMessage);
-                //HelloMessage backMessage = this.serializer.Deserialize(rawBuffer, 0, rawBuffer.Length);
-                //HelloMessage backMessage = this.serializer.Deserialize(rawBuffer);
-                //Console.WriteLine("[Client] Message deserialize: {0}, {1}, {2}, {3}", backMessage.Type, backMessage.ID, backMessage.Message, backMessage.Direction);
-
 
                 Byte[] sendBuffer = this.serializer.SerializeWithPrefix(helloMessage);
 
