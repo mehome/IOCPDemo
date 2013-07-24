@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using System.Net.Sockets;
 using System.Threading;
 using System.IO;
-using ProtoBuf;
 
 namespace IOCPDemo
 {

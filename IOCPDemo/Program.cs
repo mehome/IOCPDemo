@@ -1,13 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Net.Sockets;
-using System.ServiceModel.Channels;
-using System.Collections;
 using System.Threading;
 using System.Timers;
+using ProtoSharp;
+using ProtoSharp.CodeGeneration;
+using System.Reflection;
 
 namespace IOCPDemo
 {
@@ -27,7 +24,25 @@ namespace IOCPDemo
         static void Main(string[] args)
         {
             //TestProtoBuf();
-            
+#if !MONO_MODE
+            ProtoGeneratorSettings settings = new ProtoGeneratorSettings();
+            {
+                settings.InputAssemblyFileNames.Add(Assembly.GetExecutingAssembly().Location);
+                settings.TargetAssembly = "messages.dll";
+                settings.CSharpFileName = "..\\..\\GeneratedSerializers.cs";
+                settings.ProtoFileName = "messages.proto";
+#if DEBUG
+                settings.DebugCompilation = true;
+#endif
+                settings.GenerateMetaData = true;
+                settings.MetaDataFileName = "messages.metadata";
+                settings.LoadTargetAutomatically = true;
+            }
+
+            ProtoGenerator.Process(settings);
+#endif
+            ProtoModuleLoader.InitializeSerializers();
+
             clients = new List<Client>();
 
             StartServer();
