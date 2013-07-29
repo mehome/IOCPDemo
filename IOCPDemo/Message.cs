@@ -10,7 +10,7 @@ using ProtoSharp;
 namespace IOCPDemo
 {
 
-    enum MessageType
+    enum MessageID
     {
         Hello = 1,
         Goodbye = 2,
@@ -25,16 +25,20 @@ namespace IOCPDemo
     [ProtoMessage]
     public class HelloMessage
     {
+        //[ProtoField(1)]
+        //public Int32 Type = (Int32)MessageType.Hello;
+        //[ProtoField(2)]
+        //public Int32 ID { get; set; }
+        //[ProtoField(3)]
+        //public Int32 Direction { get; set; }
+        //[ProtoField(4)]
+        //public String Message { get; set; }
+        //[ProtoField(5)]
+        //public Int32 SessionID { get; set; }
         [ProtoField(1)]
-        public Int32 Type = (Int32)MessageType.Hello;
+        public Int32 ClientID { get; set; }
         [ProtoField(2)]
-        public Int32 ID { get; set; }
-        [ProtoField(3)]
-        public Int32 Direction { get; set; }
-        [ProtoField(4)]
         public String Message { get; set; }
-        [ProtoField(5)]
-        public Int32 SessionID { get; set; }
     }
 
     // Protobuf 的封装
@@ -69,11 +73,16 @@ namespace IOCPDemo
             Byte[] messageBuffer = Serialize(message);
 
             Byte[] prefixBuffer = BitConverter.GetBytes((Int16)Buffer.ByteLength(messageBuffer));
-            Int32 msgLength = 2 + messageBuffer.Length;
+            Int32 msgLength = 4 + messageBuffer.Length;
             Byte[] resultBuffer = new Byte[msgLength];
 
-            Buffer.BlockCopy(prefixBuffer, 0, resultBuffer, 0, 2);
-            Buffer.BlockCopy(messageBuffer, 0, resultBuffer, 2, messageBuffer.Length);
+            Byte[] messageIdBuffer = BitConverter.GetBytes((Int16)1);
+            //Console.WriteLine("messageIdBuffer: {0}", ByteArrayToHex(messageIdBuffer));
+            Array.Copy(prefixBuffer, 0, resultBuffer, 0, 2);
+            Array.Copy(messageIdBuffer, 0, resultBuffer, 2, 2);
+            //Console.WriteLine("messageIdBuffer: {0}", ByteArrayToHex(resultBuffer));
+
+            Array.Copy(messageBuffer, 0, resultBuffer, 4, messageBuffer.Length);
             return resultBuffer;
         }
 

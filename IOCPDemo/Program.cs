@@ -10,10 +10,9 @@ namespace IOCPDemo
 {
     class Program
     {
+        private static int port = 9092;
 
-        private static int port = 9091;
-
-        private static int maxClients = 5;
+        private static int maxClients = 1;
 
         private static Server server;
 
@@ -24,6 +23,27 @@ namespace IOCPDemo
         static void Main(string[] args)
         {
             //TestProtoBuf();
+            InitializeProtoSerializers();
+
+            clients = new List<Client>();
+
+            //StartServer();
+            
+            Console.WriteLine("Press any key to create client...");
+            Console.ReadKey();
+
+            for (int i = 0; i < maxClients; i++)
+            {
+                //ThreadPool.QueueUserWorkItem(o => StartClientAndSendMessage("hello hello hello hello hello hello hello hello hello"));
+                StartClientAndSendMessage("hello");
+            }
+
+            Console.WriteLine("Press any key to exit...");
+            Console.ReadKey();
+        }
+
+        private static void InitializeProtoSerializers()
+        {
 #if !MONO_MODE
             ProtoGeneratorSettings settings = new ProtoGeneratorSettings();
             {
@@ -42,23 +62,9 @@ namespace IOCPDemo
             ProtoGenerator.Process(settings);
 #endif
             ProtoModuleLoader.InitializeSerializers();
-
-            clients = new List<Client>();
-
-            StartServer();
-
-            Console.WriteLine("Press any key to create client...");
-            Console.ReadKey();
-
-            for (int i = 0; i < maxClients; i++)
-            {
-                ThreadPool.QueueUserWorkItem(o => StartClientAndSendMessage("hello hello hello hello hello hello hello hello hello"));
-            }
-
-            Console.WriteLine("Press any key to exit...");
-            Console.ReadKey();
         }
 
+        /*
         private static void TestProtoBuf()
         {
             MessageSerializer serializer = new MessageSerializer();
@@ -75,6 +81,7 @@ namespace IOCPDemo
             HelloMessage bmsg = serializer.Deserialize<HelloMessage>(rawBuffer);
             Console.WriteLine("[Client] deserialize: {0}, {1}, {2}, {3}", bmsg.Type, bmsg.ID, bmsg.Message, bmsg.Direction);
         }
+        */
 
         private static void StartServer()
         {
@@ -90,7 +97,7 @@ namespace IOCPDemo
                 clientId = Interlocked.Increment(ref clientId);
 
                 Console.WriteLine("[Client] StartClient: {0}", clientId);
-                Client client = new Client(clientId, "127.0.0.1", port);
+                Client client = new Client(clientId, "localhost", port);
                 client.Connect();
                 clients.Add(client);
                 Console.WriteLine("[Client] Add client #{0} to list. size: {1}", client.index, clients.Count);
@@ -116,10 +123,15 @@ namespace IOCPDemo
             System.Timers.Timer t = new System.Timers.Timer(2000);
 
             // Hook up the Elapsed event for the timer.
-            t.Elapsed += new ElapsedEventHandler((o, e) => client.SendReceive(message));
+            t.Elapsed += new ElapsedEventHandler((o, e) => 
+                {
+                    client.SendReceive(message);
+                    t.Stop();
+                }
+            );
 
             // Set the Interval to 2 seconds (2000 milliseconds).
-            //t.Interval = 5000;
+            //t.Interval = 10000;
             t.Enabled = true;
             t.Start();
         }

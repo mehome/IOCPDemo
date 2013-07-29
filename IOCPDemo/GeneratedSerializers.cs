@@ -1,6 +1,6 @@
 // Do not modify this file, it is automatically generated. 
 // 
-// Date: 07/24/2013 18:35:39
+// Date: 07/29/2013 11:40:34
 
 using System.Linq;
 
@@ -20,12 +20,9 @@ namespace IOCPDemo
         {
             0x08, 0x02, 0x12, 0x15, 0x49, 0x4F, 0x43, 0x50, 0x44, 0x65, 0x6D, 0x6F, 0x2E, 0x48, 0x65, 0x6C, 
             0x6C, 0x6F, 0x4D, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x1A, 0x10, 0xA1, 0x46, 0xB4, 0x7B, 0x35, 
-            0x48, 0xE4, 0x3B, 0x97, 0x9B, 0xDD, 0x15, 0x13, 0xA3, 0x58, 0x29, 0x2A, 0x0C, 0x08, 0x02, 0x12, 
-            0x04, 0x54, 0x79, 0x70, 0x65, 0x18, 0x8C, 0x80, 0x12, 0x2A, 0x0A, 0x08, 0x04, 0x12, 0x02, 0x49, 
-            0x44, 0x18, 0x8C, 0x80, 0x12, 0x2A, 0x11, 0x08, 0x06, 0x12, 0x09, 0x44, 0x69, 0x72, 0x65, 0x63, 
-            0x74, 0x69, 0x6F, 0x6E, 0x18, 0x8C, 0x80, 0x12, 0x2A, 0x0F, 0x08, 0x08, 0x12, 0x07, 0x4D, 0x65, 
-            0x73, 0x73, 0x61, 0x67, 0x65, 0x18, 0x9C, 0xC0, 0x24, 0x2A, 0x11, 0x08, 0x0A, 0x12, 0x09, 0x53, 
-            0x65, 0x73, 0x73, 0x69, 0x6F, 0x6E, 0x49, 0x44, 0x18, 0x8C, 0x80, 0x12
+            0x48, 0xE4, 0x3B, 0x97, 0x9B, 0xDD, 0x15, 0x13, 0xA3, 0x58, 0x29, 0x2A, 0x10, 0x08, 0x02, 0x12, 
+            0x08, 0x43, 0x6C, 0x69, 0x65, 0x6E, 0x74, 0x49, 0x44, 0x18, 0x8C, 0x80, 0x12, 0x2A, 0x0F, 0x08, 
+            0x04, 0x12, 0x07, 0x4D, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x18, 0x9C, 0xC0, 0x24
         };
 
         public static readonly ProtoSharp.Inspection.IProtoMetaProvider[] ReferenceMetaProviders_Static = null;
@@ -66,11 +63,8 @@ namespace IOCPDemo
             }
 
             ProtoSharp.ProtoWriter writer = new ProtoSharp.ProtoWriter();
-            writer.WriteInt32(1, message.Type, ProtoSharp.ProtoFieldEncoding.VarintZigZag);
-            writer.WriteInt32(2, message.ID, ProtoSharp.ProtoFieldEncoding.VarintZigZag);
-            writer.WriteInt32(3, message.Direction, ProtoSharp.ProtoFieldEncoding.VarintZigZag);
-            writer.WriteString(4, message.Message, ProtoSharp.ProtoFieldEncoding.Utf8);
-            writer.WriteInt32(5, message.SessionID, ProtoSharp.ProtoFieldEncoding.VarintZigZag);
+            writer.WriteInt32(1, message.ClientID, ProtoSharp.ProtoFieldEncoding.VarintZigZag);
+            writer.WriteString(2, message.Message, ProtoSharp.ProtoFieldEncoding.Utf8);
 
             return writer.ToBytesBuffer();
         }
@@ -101,24 +95,12 @@ namespace IOCPDemo
             {
                 switch (field.Tag)
                 {
-                    case 1:  // int Type
-                        message.Type = field.ToInt32(ProtoSharp.ProtoFieldEncoding.VarintZigZag);
+                    case 1:  // int ClientID
+                        message.ClientID = field.ToInt32(ProtoSharp.ProtoFieldEncoding.VarintZigZag);
                         break;
 
-                    case 2:  // int ID
-                        message.ID = field.ToInt32(ProtoSharp.ProtoFieldEncoding.VarintZigZag);
-                        break;
-
-                    case 3:  // int Direction
-                        message.Direction = field.ToInt32(ProtoSharp.ProtoFieldEncoding.VarintZigZag);
-                        break;
-
-                    case 4:  // string Message
+                    case 2:  // string Message
                         message.Message = field.ToString(ProtoSharp.ProtoFieldEncoding.Utf8);
-                        break;
-
-                    case 5:  // int SessionID
-                        message.SessionID = field.ToInt32(ProtoSharp.ProtoFieldEncoding.VarintZigZag);
                         break;
 
                     default:

@@ -44,7 +44,9 @@ namespace IOCPDemo
             {
                 try
                 {
-                    return this.pool.Count > 0 ? this.pool.Pop() : null;
+                    SocketAsyncEventArgs e = this.pool.Count > 0 ? this.pool.Pop() : null;
+                    Console.WriteLine("EventArgs is poped {0}", e.GetHashCode());
+                    return e;
                 }
                 catch
                 {

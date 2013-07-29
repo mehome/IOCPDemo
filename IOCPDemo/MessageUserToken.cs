@@ -36,9 +36,11 @@ namespace IOCPDemo
 
         private MessageSerializer serializer;
 
+        private AutoResetEvent resourceFree = new AutoResetEvent(true);
+
         internal MessageUserToken()
         {
-            bufferReceived = new Byte[] {};
+            bufferReceived = new Byte[] { };
             serializer = new MessageSerializer();
             //Console.WriteLine("MessageUserToken:bufferReceived: {0}", bufferReceived);
         }
@@ -46,6 +48,8 @@ namespace IOCPDemo
         // 处理 Buffer，当 Message 可以被解析时，抛出事件
         public void ProcessBuffer(SocketAsyncEventArgs e)
         {
+            resourceFree.WaitOne();
+
             //Console.WriteLine("[Server] MessageUserToken:AppendBuffer: BytesTransferred: {0}, Buffer.Length: {1}", e.BytesTransferred, e.Buffer.Length);
             // 获得当前接收到的 Buffer 长度
             Int32 remainingBytesToProcess = e.BytesTransferred;
@@ -64,7 +68,7 @@ namespace IOCPDemo
             //{
             //    Console.WriteLine("[Server] bufferReceived: {0}", MessageSerializer.ByteArrayToHex(bufferReceived));
             //}
-  
+
             Int32 offset = 0;
             // 如果接收到的 Buffer 长度可以独到 prefix 的话
             while (bufferReceived.Length - offset > receivePrefixLength)
@@ -73,16 +77,18 @@ namespace IOCPDemo
                 // 如果还不知道消息长度的话
                 if (lengthOfCurrentIncomingMessage < 0)
                 {
-                    lengthOfCurrentIncomingMessage = (Int32) BitConverter.ToInt16(bufferReceived, offset);
+                    lengthOfCurrentIncomingMessage = (Int32)BitConverter.ToInt16(bufferReceived, offset);
                 }
                 //Console.WriteLine("[Server] Got message length: {0}", lengthOfCurrentIncomingMessage);
                 if (lengthOfCurrentIncomingMessage > maxMessageLength)
                 {
                     lengthOfCurrentIncomingMessage = -1;
-                    bufferReceived = new Byte[] {};
+                    bufferReceived = new Byte[] { };
                     Console.WriteLine("[Server] Prefix length to large. May be a bad message. Drop it!");
                     return;
                 }
+                // 跳过 message id 段
+                offset += 2;
 
                 // 如果消息还没有接受完成的话
                 if (bufferReceived.Length - offset - 2 < lengthOfCurrentIncomingMessage)
@@ -100,19 +106,22 @@ namespace IOCPDemo
             {
                 if (offset == bufferReceived.Length)
                 {
-                    bufferReceived = new Byte[] {};
-                } else {
+                    bufferReceived = new Byte[] { };
+                }
+                else
+                {
                     newBuffer = new Byte[bufferReceived.Length - offset];
                     Buffer.BlockCopy(bufferReceived, offset, newBuffer, 0, (bufferReceived.Length - offset));
                     bufferReceived = newBuffer;
                 }
             }
             //Console.WriteLine("[Server] bufferReceived: {0}", bufferReceived.Length);
-            if (bufferReceived.Length > 0 && bufferReceived.Length < 40)
-            {
-                //Console.WriteLine("[Server] bufferReceived: {0}", MessageSerializer.ByteArrayToHex(bufferReceived));
-            }
+            //if (bufferReceived.Length > 0 && bufferReceived.Length < 40)
+            //{
+            //    Console.WriteLine("[Server] bufferReceived: {0}", MessageSerializer.ByteArrayToHex(bufferReceived));
+            //}
             newBuffer = null;
+            resourceFree.Set();
         }
 
         public void Reset()

@@ -140,11 +140,8 @@ namespace IOCPDemo
             Console.WriteLine("[Server] ProcessHelloMessage: received client msg: '{0}'.", msg.Message);
             HelloMessage welcomeMsg = new HelloMessage
             {
-                Type = (Int32)MessageType.Hello,
-                Direction = (Int32)MessageDirection.FromServer,
-                ID = msg.ID,
-                SessionID = msg.SessionID,
-                Message = "Welcome to server. client #" + msg.SessionID.ToString(),
+                ClientID = msg.ClientID,
+                Message = "Welcome to server. client #" + msg.ClientID.ToString(),
             };
             Console.WriteLine("[Server] ProcessHelloMessage: send welcome msg: '{0}'", welcomeMsg.Message);
 

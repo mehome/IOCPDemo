@@ -56,6 +56,7 @@ namespace IOCPDemo
 
             // Instantiates the endpoint and socket.
             this.hostEndPoint = new IPEndPoint(addressList[addressList.Length - 1], port);
+            //this.hostEndPoint = new IPEndPoint(0, port);
             this.clientSocket = new Socket(this.hostEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
             this.index = index;
             this.serializer = new MessageSerializer();
@@ -111,7 +112,8 @@ namespace IOCPDemo
 
         private void OnMessageReceived(object sender, MessageEventArgs e)
         {
-             HelloMessage msg = (HelloMessage) e.Message;
+
+             HelloMessage msg = (HelloMessage)e.Message;
              Console.WriteLine("[Client] OnMessageReceived: received server msg: '{0}'.", msg.Message);
              SendReceive("hello again");
         }
@@ -180,11 +182,8 @@ namespace IOCPDemo
                 // Use google buf
                 HelloMessage helloMessage = new HelloMessage
                 {
-                    Type = (Int32)MessageType.Hello,
-                    ID = this.GetMessageID(),
-                    Direction = (Int32)MessageDirection.FromClient,
                     Message = message,
-                    SessionID = this.index,
+                    ClientID = this.index,
                 };
 
                 Byte[] sendBuffer = this.serializer.SerializeWithPrefix(helloMessage);
@@ -207,7 +206,9 @@ namespace IOCPDemo
             }
             else
             {
-                throw new SocketException((Int32)SocketError.NotConnected);
+                Console.WriteLine("Socket not connected");
+                //throw new SocketException((Int32)SocketError.NotConnected);
+                return "";
             }
         }
 
